@@ -75,6 +75,14 @@ func NewFileFromPartReader(reader *multipart.Reader, mediatype string) (Director
 	}, nil
 }
 
+func IsMultiPartDirectory(d Directory) bool {
+	if _, ok := d.(*multipartDirectory); ok {
+		return true
+	} else {
+		return false
+	}
+}
+
 func (w *multipartWalker) nextFile() (Node, error) {
 	part, err := w.getPart()
 	if err != nil {
@@ -287,6 +295,14 @@ func (f *multipartDirectory) Close() error {
 
 func (f *multipartDirectory) Size() (int64, error) {
 	return 0, ErrNotSupported
+}
+
+func MultiPartReader(d Directory) *multipart.Reader {
+	md, ok := d.(*multipartDirectory)
+	if !ok {
+		return nil
+	}
+	return md.walker.reader
 }
 
 var _ Directory = &multipartDirectory{}

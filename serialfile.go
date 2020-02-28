@@ -120,6 +120,14 @@ func (f *serialFile) Entries() DirIterator {
 	}
 }
 
+func IsSerialFileDirectory(d Directory) bool {
+	if _, ok := d.(*serialFile); ok {
+		return true
+	} else {
+		return false
+	}
+}
+
 func (f *serialFile) NextFile() (string, Node, error) {
 	// if there aren't any files left in the root directory, we're done
 	if len(f.files) == 0 {

@@ -100,5 +100,13 @@ func (f *SliceFile) Size() (int64, error) {
 	return size, nil
 }
 
+func IsMapDirectory(d Directory) bool {
+	if _, ok := d.(*SliceFile); ok {
+		return true
+	} else {
+		return false
+	}
+}
+
 var _ Directory = &SliceFile{}
 var _ DirEntry = fileEntry{}

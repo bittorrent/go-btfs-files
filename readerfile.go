@@ -78,5 +78,9 @@ func (f *ReaderFile) Seek(offset int64, whence int) (int64, error) {
 	return 0, ErrNotSupported
 }
 
+func (f *ReaderFile) Reader() io.Reader {
+	return f.reader
+}
+
 var _ File = &ReaderFile{}
 var _ FileInfo = &ReaderFile{}
