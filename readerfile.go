@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 // ReaderFile is a implementation of File created from an `io.Reader`.
@@ -57,6 +58,20 @@ func (f *ReaderFile) Close() error {
 
 func (f *ReaderFile) Stat() os.FileInfo {
 	return f.stat
+}
+
+func (f *ReaderFile) Mode() os.FileMode {
+	if f.stat == nil {
+		return 0
+	}
+	return f.stat.Mode()
+}
+
+func (f *ReaderFile) ModTime() time.Time {
+	if f.stat == nil {
+		return time.Time{}
+	}
+	return f.stat.ModTime()
 }
 
 func (f *ReaderFile) Size() (int64, error) {

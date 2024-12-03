@@ -5,9 +5,12 @@ import (
 	"mime"
 	"mime/multipart"
 	"net/url"
+	"os"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const (
@@ -22,9 +25,25 @@ const (
 	contentDispositionHeader = "Content-Disposition"
 )
 
+// multiPartFileInfo implements the `fs.FileInfo` interface for a file or
+// directory received in a `multipart.part`.
+type multiPartFileInfo struct {
+	name  string
+	mode  os.FileMode
+	mtime time.Time
+}
+
+func (fi *multiPartFileInfo) Name() string       { return fi.name }
+func (fi *multiPartFileInfo) Mode() os.FileMode  { return fi.mode }
+func (fi *multiPartFileInfo) ModTime() time.Time { return fi.mtime }
+func (fi *multiPartFileInfo) IsDir() bool        { return fi.mode.IsDir() }
+func (fi *multiPartFileInfo) Sys() interface{}   { return nil }
+func (fi *multiPartFileInfo) Size() int64        { panic("size for multipart file info is not supported") }
+
 type multipartDirectory struct {
 	path   string
 	walker *multipartWalker
+	stat   os.FileInfo
 
 	// part is the part describing the directory. It's nil when implicit.
 	part *multipart.Part
@@ -88,6 +107,8 @@ func (w *multipartWalker) nextFile() (Node, error) {
 	}
 	w.consumePart()
 
+	name := fileName(part)
+
 	contentType := part.Header.Get(contentTypeHeader)
 	if contentType != "" {
 		var err error
@@ -102,6 +123,7 @@ func (w *multipartWalker) nextFile() (Node, error) {
 		return &multipartDirectory{
 			part:   part,
 			path:   fileName(part),
+			stat:   fileInfo(name, part),
 			walker: w,
 		}, nil
 	case applicationSymlink:
@@ -116,6 +138,7 @@ func (w *multipartWalker) nextFile() (Node, error) {
 		rf := &ReaderFile{
 			reader:  part,
 			abspath: absPath,
+			stat:    fileInfo(name, part),
 		}
 		cdh := part.Header.Get(contentDispositionHeader)
 		_, params, err := mime.ParseMediaType(cdh)
@@ -133,6 +156,44 @@ func (w *multipartWalker) nextFile() (Node, error) {
 		w.currAbsPath = absPath
 		return rf, nil
 	}
+}
+
+// fileInfo constructs an `os.FileInfo` from a `multipart.part` serving
+// a file or directory.
+func fileInfo(name string, part *multipart.Part) os.FileInfo {
+	fi := multiPartFileInfo{name: filepath.Base(name)}
+	formName := part.FormName()
+
+	i := strings.IndexByte(formName, '?')
+	if i == -1 {
+		return &fi
+	}
+
+	params, err := url.ParseQuery(formName[i+1:])
+	if err != nil {
+		return nil
+	}
+
+	if v := params["mode"]; v != nil {
+		mode, err := strconv.ParseUint(v[0], 8, 32)
+		if err == nil {
+			fi.mode = os.FileMode(mode)
+		}
+	}
+
+	var secs, nsecs int64
+	if v := params["mtime"]; v != nil {
+		secs, err = strconv.ParseInt(v[0], 10, 64)
+		if err != nil {
+			return &fi
+		}
+	}
+	if v := params["mtime-nsecs"]; v != nil {
+		nsecs, _ = strconv.ParseInt(v[0], 10, 64)
+	}
+	fi.mtime = time.Unix(secs, nsecs)
+
+	return &fi
 }
 
 // fileName returns a normalized filename from a part.
@@ -255,6 +316,20 @@ func (f *multipartDirectory) Close() error {
 		return f.part.Close()
 	}
 	return nil
+}
+
+func (f *multipartDirectory) Mode() os.FileMode {
+	if f.stat == nil {
+		return 0
+	}
+	return f.stat.Mode()
+}
+
+func (f *multipartDirectory) ModTime() time.Time {
+	if f.stat == nil {
+		return time.Time{}
+	}
+	return f.stat.ModTime()
 }
 
 func (f *multipartDirectory) Size() (int64, error) {

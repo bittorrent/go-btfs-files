@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 // serialFile implements Node, and reads from a path on the OS filesystem.
@@ -150,9 +151,17 @@ func (f *serialFile) Stat() os.FileInfo {
 	return f.stat
 }
 
+func (f *serialFile) Mode() os.FileMode {
+	return f.stat.Mode()
+}
+
+func (f *serialFile) ModTime() time.Time {
+	return f.stat.ModTime()
+}
+
 func (f *serialFile) Size() (int64, error) {
 	if !f.stat.IsDir() {
-		//something went terribly, terribly wrong
+		// something went terribly, terribly wrong
 		return 0, errors.New("serialFile is not a directory")
 	}
 
