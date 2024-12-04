@@ -31,6 +31,7 @@ type multiPartFileInfo struct {
 	name  string
 	mode  os.FileMode
 	mtime time.Time
+	size  int64
 }
 
 func (fi *multiPartFileInfo) Name() string       { return fi.name }
@@ -38,7 +39,7 @@ func (fi *multiPartFileInfo) Mode() os.FileMode  { return fi.mode }
 func (fi *multiPartFileInfo) ModTime() time.Time { return fi.mtime }
 func (fi *multiPartFileInfo) IsDir() bool        { return fi.mode.IsDir() }
 func (fi *multiPartFileInfo) Sys() interface{}   { return nil }
-func (fi *multiPartFileInfo) Size() int64        { panic("size for multipart file info is not supported") }
+func (fi *multiPartFileInfo) Size() int64        { return fi.size }
 
 type multipartDirectory struct {
 	path   string
@@ -191,6 +192,7 @@ func fileInfo(name string, part *multipart.Part) os.FileInfo {
 	if v := params["mtime-nsecs"]; v != nil {
 		nsecs, _ = strconv.ParseInt(v[0], 10, 64)
 	}
+
 	fi.mtime = time.Unix(secs, nsecs)
 
 	return &fi
