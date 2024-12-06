@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"time"
 )
 
 // WebFile is an implementation of File which reads it
@@ -16,6 +17,8 @@ type WebFile struct {
 	body          io.ReadCloser
 	url           *url.URL
 	contentLength int64
+	mode          os.FileMode
+	mtime         time.Time
 }
 
 // NewWebFile creates a WebFile with the given URL, which
@@ -64,6 +67,14 @@ func (wf *WebFile) Close() error {
 // TODO: implement
 func (wf *WebFile) Seek(offset int64, whence int) (int64, error) {
 	return 0, ErrNotSupported
+}
+
+func (wf *WebFile) Mode() os.FileMode {
+	return wf.mode
+}
+
+func (wf *WebFile) ModTime() time.Time {
+	return wf.mtime
 }
 
 func (wf *WebFile) Size() (int64, error) {

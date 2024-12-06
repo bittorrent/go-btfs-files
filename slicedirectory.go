@@ -2,7 +2,9 @@ package files
 
 import (
 	"errors"
+	"os"
 	"sort"
+	"time"
 )
 
 type fileEntry struct {
@@ -55,6 +57,7 @@ func (it *sliceIterator) BreadthFirstTraversal() {
 // SliceFiles are always directories, and can't be read from or closed.
 type SliceFile struct {
 	files []DirEntry
+	stat  os.FileInfo
 }
 
 func NewMapDirectory(f map[string]Node) Directory {
@@ -70,7 +73,7 @@ func NewMapDirectory(f map[string]Node) Directory {
 }
 
 func NewSliceDirectory(files []DirEntry) Directory {
-	return &SliceFile{files}
+	return &SliceFile{files: files}
 }
 
 func (f *SliceFile) Entries() DirIterator {
@@ -83,6 +86,20 @@ func (f *SliceFile) Close() error {
 
 func (f *SliceFile) Length() int {
 	return len(f.files)
+}
+
+func (f *SliceFile) Mode() os.FileMode {
+	if f.stat != nil {
+		return f.stat.Mode()
+	}
+	return 0
+}
+
+func (f *SliceFile) ModTime() time.Time {
+	if f.stat != nil {
+		return f.stat.ModTime()
+	}
+	return time.Time{}
 }
 
 func (f *SliceFile) Size() (int64, error) {
