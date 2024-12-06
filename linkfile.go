@@ -10,21 +10,14 @@ type Symlink struct {
 	Target string
 
 	mtime  time.Time
+	stat   os.FileInfo
 	reader strings.Reader
 }
 
 func NewLinkFile(target string, stat os.FileInfo) File {
-	mtime := time.Time{}
-	if stat != nil {
-		mtime = stat.ModTime()
-	}
-	return NewSymlinkFile(target, mtime)
-}
-
-func NewSymlinkFile(target string, mtime time.Time) File {
-	lf := &Symlink{
-		Target: target,
-		mtime:  mtime,
+	lf := &Symlink{Target: target, stat: stat}
+	if stat != nil && stat.ModTime() != (time.Time{}) {
+		lf.mtime = stat.ModTime()
 	}
 	lf.reader.Reset(lf.Target)
 	return lf
