@@ -16,7 +16,7 @@ type Symlink struct {
 
 func NewLinkFile(target string, stat os.FileInfo) File {
 	lf := &Symlink{Target: target, stat: stat}
-	if stat.ModTime() != (time.Time{}) {
+	if stat != nil && stat.ModTime() != (time.Time{}) {
 		lf.mtime = stat.ModTime()
 	}
 	lf.reader.Reset(lf.Target)
