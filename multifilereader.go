@@ -170,7 +170,7 @@ func (mfr *MultiFileReader) addContentDisposition(header textproto.MIMEHeader, f
 		sb.WriteString("attachment")
 	}
 
-	fmt.Fprintf(sb, "; filename=\"%s\"", url.QueryEscape(filename))
+	fmt.Fprintf(sb, "; filename=\"%s\"", filename)
 
 	header.Set(contentDispositionHeader, sb.String())
 }
